@@ -7,7 +7,11 @@ Created on Aug 15, 2012
 import senseapi
 import json
 import time
+import sys
 
+def fail(error):
+	print error
+	sys.exit(-1)
 def getAllSensorData(se, sensorId, par):
     allData = []
     par['per_page'] = 1000
@@ -15,7 +19,7 @@ def getAllSensorData(se, sensorId, par):
     first = True
     while (True):
         if not se.SensorDataGet(sensorId, par): #TODO check status code
-            print "Error: " + repr(response);
+            print "Error: " + repr(se.getResponse());
             print "Waiting 30 seconds and try again"
             time.sleep(30)
             continue
@@ -42,13 +46,14 @@ def main():
     username = credentials['username']
     password = credentials['password']
     password_md5 = senseapi.MD5Hash(password)
-    se.Login(username,password)
-    
+    if not se.Login(username,password_md5):
+	    fail("Couldn't login. {}".format(se.getResponse()))
+ 
     #get all sensor data of some sensor
     par= {'sort': 'ASC'}
-    #par['start_date'] = 1357776000
+    #par['start_date'] = 1358326800
     #par['end_date'] = 1357927200
-    sensorId = 285352
+    sensorId = sys.argv[1]
     sensorData = getAllSensorData(se, sensorId, par)
     print json.dumps({'data':sensorData})
 
