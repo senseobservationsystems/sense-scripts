@@ -51,8 +51,8 @@ def main():
  
     #get all sensor data of some sensor
     par= {'sort': 'ASC'}
-    #par['start_date'] = 1358326800
-    #par['end_date'] = 1357927200
+    par['start_date'] = 1360076400 # 16:00 02/06
+    par['end_date'] = 1360148400 # 12:00 03/06
     sensorId = sys.argv[1]
     sensorData = getAllSensorData(se, sensorId, par)
     print json.dumps({'data':sensorData})
