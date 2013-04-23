@@ -3,7 +3,32 @@ require 'nokogiri'
 require 'commonsense-ruby-lib'
 require 'json'
 
+
+
+
+####################
+# Main function, automatically called when run from command line (see bottom of script)
+#####################
+
+def main(sy,sm,sd,ey,em,ed,settings_file="settings.yaml")
+    settings = YAML.load_file(settings_file)
     
+    sdate = DateTime.new(sy,sm,sd)
+    edate = DateTime.new(ey,em,ed)
+
+    agent = login_fitbit(settings["fitbit_user"],settings["fitbit_pass"])
+    
+    days = period_with_data(sdate,edate,agent,settings)
+    
+    data = data_for_days( days, agent, settings )
+
+    send_to_cs( data_for_period
+end
+
+
+####################
+# Setup mechanize and login 
+#####################
 
 def login_fitbit(fb_user,fb_pass)
     a = Mechanize.new { |agent|
@@ -21,37 +46,37 @@ def login_fitbit(fb_user,fb_pass)
     return a
 end
 
-def load_data(y,m,d,fb_user,fb_pass,fb_id)
 
-    date_str = y.to_s+'-'+m.to_s+'-'+d.to_s
-    creds = IO.read('credentials.txt').split
+####################
+# Following three functions get actual data, but need a list of days to work
+####################
 
-    a = Mechanize.new { |agent|
-        agent.user_agent_alias = 'Mac Safari'
-    }
-
-    a.get('https://www.fitbit.com/login') do |page|
-       
-        dash_page = page.form_with(:action => 'https://www.fitbit.com/login') do |f|
-            f.email = creds[0]
-            f.password = creds[1]
-        end.click_button
-        
-        a.get('http://www.fitbit.com/graph/getGraphData?'+
-                'userId=24Y4CV&type=intradaySleep&period=1d&dataVersion=871&version=amchart&'+
-                'dateFrom='+date_str+'&dateTo='+date_str+'&chart_type=column2d',[],dash_page) do |graph_page|
-            return parse_fitbit_xml(graph_page,y,m,d)
-        end
-    end
+def data_for_days(days,agent,settings)
+    (days.map do |d| 
+        data.concat load_data(d,agent,settings)
+    end).flatten
 end
 
-def parse_fitbit_xml(xml,y,m,d)
+
+def data_for_day(d,agent,settings)
+    
+    date_str =  d.strftime('%Y-%-m-%-d')
+
+    xmlpage = agent.get('http://www.fitbit.com/graph/getGraphData?'+
+                'userId=24Y4CV&type=intradaySleep&period=1d&dataVersion=871&version=amchart&'+
+                'dateFrom='+date_str+'&dateTo='+date_str+'&chart_type=column2d')
+    agent.back
+
+    return parse_fitbit_xml(xmlpage,d)
+end
+
+
+def parse_fitbit_xml(xml,d)
     ret = []
 
     items = xml.search('/settings/data/chart/graphs/graph/value')
     start_time = DateTime.parse( items.first['description'].split.last, '%H:%M%p')
     
-    d = DateTime.new(y,m,d)
     d -= 1 if start_time.hour > 12 
     sec = d.to_time.to_i
 
@@ -61,6 +86,26 @@ def parse_fitbit_xml(xml,y,m,d)
     end
     
     return ret
+end
+
+####################
+# Following two functions get a list of days for which data is available
+####################
+
+def period_with_data(sdate,edate,agent,settings)
+    
+    #we only retrieve data for whole months, so change start date to first of month
+    nsdate = sdate - sdate.day if sdate.day > 1
+    days = []
+
+    (nsdate..edate).select { |d| d.day == 1 }).map do |d|
+        days << days_with_data(d,agent,settings)
+    end
+    
+    days.map! { |a| DateTime.new *a }
+    days.reject! { |d| d < sdate or d > edate }
+
+    return days
 end
 
 def days_with_data(d,agent,settings)
@@ -73,7 +118,7 @@ def days_with_data(d,agent,settings)
             '&type=timeAsleepTotal&period=1m'+
             '&dataVersion=881&version=amchart&dateTo=' + date_str +
             '&ts=' + (DateTime.now.to_time.to_i * 1000).to_s +
-            '&chart_type=column2d',[],dash_page)
+            '&chart_type=column2d')
     
     page.search('//data/chart/graphs/graph/value').each do |x|
         dates << x['url'].split('/').pop(3).map(&:to_i) if x.text.to_f > 0.0
@@ -82,74 +127,11 @@ def days_with_data(d,agent,settings)
     agent.back
 
     return dates 
-
-    
-    # a = Mechanize.new { |agent|
-    #     agent.user_agent_alias = 'Mac Safari'
-    # }
-
-    # a.get('https://www.fitbit.com/login') do |page|
-    #    
-    #     dash_page = page.form_with(:action => 'https://www.fitbit.com/login') do |f|
-    #         f.email = creds[0]
-    #         f.password = creds[1]
-    #     end.click_button
-    #     
-    #     a.get('http://www.fitbit.com/graph/getGraphData?userId=24Y4CV&type=timeAsleepTotal&period=1m&'+
-    #             'dataVersion=881&version=amchart&dateTo=' + date_str +
-    #             '&ts=' + (DateTime.now.to_time.to_i * 1000).to_s +
-    #             '&chart_type=column2d',[],dash_page) do |month_graph|
-    #         # pp month_graph
-    #         month_graph.search('//data/chart/graphs/graph/value').each do |x|
-    #             dates << x['url'].split('/').pop(3).map(&:to_i) if x.text.to_f > 0.0
-    #         end
-    #     end
-    #     return dates
-    # end
 end
 
-def period_with_data(sdate,edate,agent,settings)
-    
-    #we only retrieve data for whole months, so change start date to first of month
-    nsdate = sdate - sdate.day if sdate.day > 1
-    days = []
-
-    (nsdate..edate).select { |d| d.day == 1 }).map do |d|
-        days << days_with_data(d,agent,settings)
-    end
-
-    days.reject! {|a|
-
-    ((Date.new(sy, sm)..Date.new(ey, em)).select {|d| d.day == 1}).each do |d|
-        days.concat days_with_data(d.year,d.month)
-    end
-    return days
-end
-
-def data_for_period(sy,sm,sd,ey,em,ed)
-    sdate = DateTime.new(sy,sm,sd)
-    edate = DateTime.new(ey,em,ed)
-
-    data = []
-    
-    period_with_data(sy,sm,ey,em).map do |d|
-        cdate = DateTime.new *d
-        if cdate >= sdate and cdate <= edate then
-            data.concat load_data *d
-        end
-    end
-
-    return data
-end
-
-
-def data_to_file()
-    data = data_for_period(2012,12,2013,4)
-    File.open('fitbit.json','w') do |f| 
-        f.write(data.to_json) 
-    end
-end
-
+####################
+# Send data to commonSense 
+####################
 
 def send_to_cs(data)
     # sensor id: 327992
@@ -159,19 +141,24 @@ def send_to_cs(data)
     return client.session.response_code
 end
 
-def main(sy,sm,sd,ey,em,ed,settings_file="settings.yaml")
-    settings = YAML.load_file(settings_file)
-    
-    sdate = DateTime.new(sy,sm,sd)
-    edate = DateTime.new(ey,em,ed)
 
-    agent = login_fitbit(settings["fitbit_user"],settings["fitbit_pass"])
-    
-    days_with_data = 
 
-    # send_to_cs( JSON.parse(IO.read('fitbit.json')) )
-    send_to_cs( data_for_period
+####################
+# misc functions
+#####################
+
+def data_to_file()
+    data = data_for_period(2012,12,2013,4)
+    File.open('fitbit.json','w') do |f| 
+        f.write(data.to_json) 
+    end
 end
+
+
+####################
+# Automatically run script when called from commandline 
+####################
+
 
 if __FILE__ == $0
     
