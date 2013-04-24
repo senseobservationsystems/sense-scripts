@@ -99,7 +99,6 @@ def period_with_data(sdate,edate,agent,settings)
     nsdate -= ( sdate.day + 1 ) if sdate.day > 1
 
     days = []
-    puts nsdate.to_s + " <> " + edate.to_s
     ((nsdate..edate).select { |d| d.day == 1 }).map do |d|
         days << days_with_data(d,agent,settings)
     end
@@ -172,6 +171,8 @@ if __FILE__ == $0
     if ARGV.count < 6 then
         abort "wrong number of parameters, usage: "+$0+" startyear startmonth startday endyear endmonth endday (settings_file)"
     end
-
-    main(*ARGV)
+    print "Importing your fitbit data..."
+    sfile  = ARGV.pop
+    main(*(ARGV.map(&:to_i)),sfile)
+    print " done\n"
 end
