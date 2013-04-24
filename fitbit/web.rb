@@ -22,7 +22,7 @@ def main(sy,sm,sd,ey,em,ed,settings_file="settings.yaml")
     
     data = data_for_days( days, agent, settings )
 
-    send_to_cs( data_for_period
+    send_to_cs( data, settings ) 
 end
 
 
@@ -53,7 +53,7 @@ end
 
 def data_for_days(days,agent,settings)
     (days.map do |d| 
-        data.concat load_data(d,agent,settings)
+        data_for_day(d,agent,settings)
     end).flatten
 end
 
@@ -95,14 +95,16 @@ end
 def period_with_data(sdate,edate,agent,settings)
     
     #we only retrieve data for whole months, so change start date to first of month
-    nsdate = sdate - sdate.day if sdate.day > 1
-    days = []
+    nsdate = sdate
+    nsdate -= ( sdate.day + 1 ) if sdate.day > 1
 
-    (nsdate..edate).select { |d| d.day == 1 }).map do |d|
+    days = []
+    puts nsdate.to_s + " <> " + edate.to_s
+    ((nsdate..edate).select { |d| d.day == 1 }).map do |d|
         days << days_with_data(d,agent,settings)
     end
-    
-    days.map! { |a| DateTime.new *a }
+    days.flatten!(1) 
+    days.map! { |a| DateTime.new(*a) }
     days.reject! { |d| d < sdate or d > edate }
 
     return days
@@ -133,11 +135,16 @@ end
 # Send data to commonSense 
 ####################
 
-def send_to_cs(data)
+def send_to_cs(data, settings)
     # sensor id: 327992
+    # pp data
     client = CommonSense::Client.new
-    client.login( *(IO.read('cs_cred.txt').split) ) 
-    client.session.post( '/sensors/327992/data.json', { :data => data } )
+    client.login( settings["cs_user"].to_s, settings["cs_pass"].to_s ) 
+    
+    while data.any? do
+        client.session.post( '/sensors/' + settings['cs_sensor_id'].to_s + '/data.json', { :data => data.shift(1000) } )
+    end
+
     return client.session.response_code
 end
 
