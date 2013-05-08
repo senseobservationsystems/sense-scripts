@@ -1,0 +1,6 @@
+cs_user: ... #fill in your commonsense user name
+cs_pass: ... #fill in your commonsense password
+cs_sensor_id: 1 #you have to create the sensor yourself... sorry
+fitbit_user: ... #fill in fitbit user name
+fitbit_pass: ... #fill in fitbit pass
+fitbit_id: ... #your fitbit user id
