@@ -34,8 +34,8 @@ if midday < datetime.datetime.now():
     midday = midday - datetime.timedelta(days=1)
 
 lastTimestamp = time.mktime(midday.timetuple())
-
-param = {"dataprocessor":{"command":command, "execution_interval":60},"last_start_time":lastTimestamp, "sensor":{"name":"Sleep", "data_type":"float"}}
+interval = datetime.timedelta(days=1).total_seconds()
+param = {"dataprocessor":{"command":command, "execution_interval":interval},"last_start_time":lastTimestamp, "sensor":{"name":"Sleep 24h sensor", "data_type":"float"}}
 if not api.DataProcessorsPost(param):
 	fail("Couldn't create data processor.");
 print "Created Sleep sensor"
