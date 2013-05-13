@@ -33,7 +33,7 @@ if midday > datetime.datetime.now():
 
 lastTimestamp = time.mktime(midday.timetuple())
 interval = datetime.timedelta(days=1).total_seconds()
-param = {"dataprocessor":{"command":command, "execution_interval":interval},"last_start_time":lastTimestamp, "sensor":{"name":"Sleep 24h sensor", "data_type":"float"}}
+param = {"dataprocessor":{"command":command, "execution_interval":interval},"last_start_time":lastTimestamp, "sensor":{"name":"Sleep", "data_type":"float"}}
 api.setVerbosity(True)
 if not api.DataProcessorsPost(param):
 	fail("Couldn't create data processor.");
