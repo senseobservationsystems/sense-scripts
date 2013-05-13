@@ -20,22 +20,21 @@ password = credentials['password']
 if not api.AuthenticateSessionId(username, senseapi.MD5Hash(password)):
 	fail ("Couldn't login.")
 
-#noise_id = 307997
-#accelerometer_id = 307999
 accelerometer_id = csUtil.getSensorId(api, "accelerometer")
 noise_id = csUtil.getSensorId(api, "noise_sensor")
 
 print "Using noise sensor {} and accelerometer sensor {} as sleep sensor inputs".format(noise_id, accelerometer_id)
 
-command = 'printf("%f",sleepTime([0 {noise_id} 0 0 {accelerometer_id}] , (time-(3600*24)), time))'.format(noise_id=noise_id, accelerometer_id=accelerometer_id)
+command = 'printf("%f",sleepTime([0 {noise_id} 0 0 {accelerometer_id}] , (time-(3600*24)), time, night_sleep=1))'.format(noise_id=noise_id, accelerometer_id=accelerometer_id)
 #get last day 12 pm, as that's the time the script expects to run
 midday = datetime.datetime.combine(datetime.date.today(),datetime.time(12,0))
-if midday < datetime.datetime.now():
+if midday > datetime.datetime.now():
     midday = midday - datetime.timedelta(days=1)
 
 lastTimestamp = time.mktime(midday.timetuple())
 interval = datetime.timedelta(days=1).total_seconds()
 param = {"dataprocessor":{"command":command, "execution_interval":interval},"last_start_time":lastTimestamp, "sensor":{"name":"Sleep 24h sensor", "data_type":"float"}}
+api.setVerbosity(True)
 if not api.DataProcessorsPost(param):
 	fail("Couldn't create data processor.");
 print "Created Sleep sensor"
