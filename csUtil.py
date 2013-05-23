@@ -99,7 +99,7 @@ def getDataFromFile(dataFile):
     for x in data['data']:
         yield (x['date'], x['value'])
         
-def getSensorId(api, sensorName, deviceType=None, description=None, userName=None):
+def getSensorIdList(api, sensorName, deviceType=None, description=None, userName=None):
     owned = 1 if userName is None else 0
     #find sensor
     if not api.SensorsGet({'per_page':1000, 'details':'full', 'order':'asc', "owned":owned}):
@@ -112,6 +112,10 @@ def getSensorId(api, sensorName, deviceType=None, description=None, userName=Non
         correctSensors = filter(lambda x: "device_type" in x and x["device_type"] == description, correctSensors)
     if userName:
         correctSensors = filter(lambda x: "owner" in x and x["owner"]["username"] == userName, correctSensors)
+    return correctSensors
+
+def getSensorId(api, sensorName, deviceType=None, description=None, userName=None):
+    correctSensors = getSensorIdList(api, sensorName, deviceType, description, userName)
     if len(correctSensors) == 0:
         raise ValueError("Sensor {} not found!".format(sensorName))
     
