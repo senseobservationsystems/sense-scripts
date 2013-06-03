@@ -3,3 +3,5 @@ my_settings.yaml
 fitbit.json
 temp.json
 *.DS_Store
+*.json
+Gemfile.lock

@@ -26,6 +26,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) != 3:
         print "Error, usage: {} csv_filename data_type (either 'zq' or 'graph')".format(sys.argv[0])
+        sys.exit();
     
     if sys.argv[2] == 'graph':
         upload_graph(sys.argv[1]) 

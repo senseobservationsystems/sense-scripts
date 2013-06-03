@@ -19,9 +19,10 @@ def main(sy,sm,sd,ey,em,ed,settings_file="settings.yaml")
     agent = login_fitbit(settings["fitbit_user"],settings["fitbit_pass"])
     
     days = period_with_data(sdate,edate,agent,settings)
-    
     data = data_for_days( days, agent, settings )
+    
 
+    #data_to_file( data, "fitbit_3.json")
     send_to_cs( data, settings ) 
 end
 
@@ -63,7 +64,8 @@ def data_for_day(d,agent,settings)
     date_str =  d.strftime('%Y-%-m-%-d')
 
     xmlpage = agent.get('http://www.fitbit.com/graph/getGraphData?'+
-                'userId=24Y4CV&type=intradaySleep&period=1d&dataVersion=871&version=amchart&'+
+                'userId='+settings['fitbit_id']+
+                '&type=intradaySleep&period=1d&dataVersion=871&version=amchart&'+
                 'dateFrom='+date_str+'&dateTo='+date_str+'&chart_type=column2d')
     agent.back
 
@@ -78,7 +80,20 @@ def parse_fitbit_xml(xml,d)
     start_time = DateTime.parse( items.first['description'].split.last, '%H:%M%p')
     
     d -= 1 if start_time.hour > 12 
-    sec = d.to_time.to_i
+      
+    # dirty hack, probably there is a more graceful way to handle timezones
+    # only thing i could find was rails specific
+    #if d > DateTime.new( 2013, 3, 31, 2, 0 )
+        # tz_off = '+2'
+    # else
+        # tz_off = '+1'
+    # end
+
+    #start_datetime = DateTime.new( d.year, d.month, d.day, 
+                                  # start_time.hour, start_time.minute, 0, tz_off )
+    start_time_local = Time.local( d.year, d.month, d.day, start_time.hour, start_time.minute)
+
+    sec = start_time_local.to_time.to_i
 
     items.each do |x| 
         ret << { value:x.text.to_i, date:sec }
@@ -153,9 +168,9 @@ end
 # misc functions
 #####################
 
-def data_to_file()
-    data = data_for_period(2012,12,2013,4)
-    File.open('fitbit.json','w') do |f| 
+def data_to_file(data,filename)
+    #data = data_for_period(2012,12,2013,4)
+    File.open(filename,'w') do |f| 
         f.write(data.to_json) 
     end
 end
