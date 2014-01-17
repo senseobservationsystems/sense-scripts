@@ -37,25 +37,29 @@ data['data'].sort(key=lambda x:int(x['id'][0:8].join(x['id'][18:24]),16))
 # print json.dumps(data)
 
 # print human-readable table with insertion times and sample times.
+nFlags = 0
+nUploads = 0
 prev = None
 for x in data['data']:
 	Ti = int(x['id'][0:8], 16)
 	counter = x['id'][18:24]
-	strTi = datetime.datetime.fromtimestamp(Ti).strftime('%d/%m %H:%M:%S')
+	strTi = datetime.datetime.fromtimestamp(Ti).strftime('%d/%m %H:%M:%S:%N')
 	Ts = x['date']
-	strTs = datetime.datetime.fromtimestamp(Ts).strftime('%d/%m %H:%M:%S')
+	strTs = datetime.datetime.fromtimestamp(Ts).strftime('%d/%m %H:%M:%S:%N')
 	
 	# insert a line for identify separate upload batches
 	if prev is not None and Ti != int(prev['id'][0:8], 16):
 		print ("-" * 72)
+		nUploads += 1
 	
 	# flag data where sample time is not increasing
 	if prev is not None and Ts < prev['date']:
 		flag = "<" * 10
+		nFlags += 1
 	else:
 		flag = ""
 
 	print "Ti: {Ti} ({counter}),\tTs: {Ts},\tvalue: {value}\t{flag}".format(Ti=strTi, Ts=strTs, counter=counter, flag=flag, value=x['value'])
 	prev = x
 	
-
+print "Counted {} / {} uploads to be out-of-order".format(nFlags, nUploads)

@@ -30,7 +30,7 @@ for x in data['data']:
 print "interval: {} +/- {}. median: {}, min: {}, max: {}".format(np.mean(intervals), np.std(intervals), np.median(intervals), np.min(intervals), np.max(intervals))
 
 #and plot a histogram
-plt.hist(intervals, bins=range(60))
+plt.hist(intervals, bins=100)
 plt.title("Sample interval histogram")
 plt.xlabel("Time (s)")
 plt.ylabel("Frequency")

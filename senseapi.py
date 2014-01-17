@@ -158,7 +158,7 @@ class SenseAPI:
 		elif self.__authentication__ == 'authenticating_oauth':
 			heads.update({"Content-type": "application/x-www-form-urlencoded", "Accept":"*"})
 			if not parameters is None:
-				http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters))
+				http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters, True))
 
 		elif self.__authentication__ == 'authenticating_session_id':
 			heads.update({"Content-type": "application/json", "Accept":"*"})
@@ -173,7 +173,7 @@ class SenseAPI:
 			if not parameters is None:
 				if method == 'GET' or method == 'DELETE':
 					heads.update({"Content-type": "application/x-www-form-urlencoded", "Accept":"*"})
-					http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters))
+					http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters, True))
 				else:
 					heads.update({"Content-type": "application/json", "Accept":"*"})
 					body = json.dumps(parameters)
@@ -183,7 +183,7 @@ class SenseAPI:
 			if not parameters is None:
 				if method == 'GET' or method == 'DELETE':
 					heads.update({"Content-type": "application/x-www-form-urlencoded", "Accept":"*"})
-					http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters))
+					http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters, True))
 				else:
 					heads.update({"Content-type": "application/json", "Accept":"*"})
 					body = json.dumps(parameters)
@@ -194,7 +194,7 @@ class SenseAPI:
 			parameters['API_KEY'] = self.__api_key__
 			if method == 'GET' or method == 'DELETE':
 				heads.update({"Content-type": "application/x-www-form-urlencoded", "Accept":"*"})
-				http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters))
+				http_url = '{0}?{1}'.format(url, urllib.urlencode(parameters, True))
 			else:
 				heads.update({"Content-type": "application/json", "Accept":"*"})
 				body = json.dumps(parameters)
@@ -683,7 +683,7 @@ class SenseAPI:
 		"""
 		ns = "default" if namespace is None else namespace
 		parameters['namespace'] = ns
-		if self.__SenseApiCall__("/sensors/find.json?{0}".format(urllib.urlencode(parameters)), "POST", parameters=filters):
+		if self.__SenseApiCall__("/sensors/find.json?{0}".format(urllib.urlencode(parameters, True)), "POST", parameters=filters):
 			return True
 		else:
 			self.__error__ = "api call unsuccessful"
@@ -702,7 +702,7 @@ class SenseAPI:
 		"""
 		ns = "default" if namespace is None else namespace
 		parameters['namespace'] = ns
-		if self.__SenseApiCall__("/groups/{0}/sensors/find.json?{1}".format(group_id, urllib.urlencode(parameters)), "POST", parameters=filters):
+		if self.__SenseApiCall__("/groups/{0}/sensors/find.json?{1}".format(group_id, urllib.urlencode(parameters, True)), "POST", parameters=filters):
 			return True
 		else:
 			self.__error__ = "api call unsuccessful"
@@ -742,6 +742,25 @@ class SenseAPI:
 			@return (bool) - Boolean indicating whether SensorDataGet was successful.
 		"""
 		if self.__SenseApiCall__('/sensors/{0}/data.json'.format(sensor_id), 'GET', parameters=parameters):
+			return True
+		else:	
+			self.__error__ = "api call unsuccessful"
+			return False 
+
+	def SensorsDataGet(self, sensorIds, parameters):
+		"""
+			Retrieve sensor data for the specified sensors from CommonSense.
+			If SensorsDataGet is successful, the result can be obtained by a call to getResponse(), and should be a json string.
+			
+			@param sensorIds (list) a list of sensor ids to retrieve the data for
+			@param parameters (dictionary) - Dictionary containing the parameters for the api call.
+					
+			@return (bool) - Boolean indicating whether SensorsDataGet was successful.
+		"""
+		if parameters is None:
+			parameters = {}
+		parameters["sensor_id[]"] = sensorIds
+		if self.__SenseApiCall__('/sensors/data.json', 'GET', parameters=parameters):
 			return True
 		else:	
 			self.__error__ = "api call unsuccessful"
