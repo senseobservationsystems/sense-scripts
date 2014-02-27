@@ -6,9 +6,9 @@
 import re
 import senseapi
 import csUtil
-from dateutil import parser
 import datetime
 import sys
+import json
 
 # <codecell>
 
@@ -16,6 +16,7 @@ import sys
 credentials=json.load(open('credentials.json'))
 username = credentials['username']
 password = credentials['password']
+description = credentials['description']
 password_md5 = senseapi.MD5Hash(password)
 api = senseapi.SenseAPI()
 api.AuthenticateSessionId(username, password_md5)
